@@ -1,0 +1,22 @@
+{
+  "name": "reporter",
+  "version": "1.0.0",
+  "description": "Email reports at the end of running a job. Also does errors. Common to my projects.",
+  "main": "Reporter.js",
+  "scripts": {
+    "test": "sh scritps/test.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nigelsdtech/reporter.git"
+  },
+  "author": "Nigel Stephen D'Souza",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nigelsdtech/reporter/issues"
+  },
+  "homepage": "https://github.com/nigelsdtech/reporter#readme",
+  "dependencies": {
+    "gmail-model": "git://github.com/nigelsdtech/gmail-model.git#8f53eb8cbf9d2de02550bdad5238cf49c21c73e9"
+  }
+}

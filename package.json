@@ -4,7 +4,7 @@
   "description": "Email reports at the end of running a job. Also does errors. Common to my projects.",
   "main": "Reporter.js",
   "scripts": {
-    "test": "sh scritps/test.sh"
+    "test": "sh scripts/test.sh"
   },
   "repository": {
     "type": "git",
@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/nigelsdtech/reporter#readme",
   "dependencies": {
-    "gmail-model": "git://github.com/nigelsdtech/gmail-model.git#8f53eb8cbf9d2de02550bdad5238cf49c21c73e9"
+    "gmail-model": "git://github.com/nigelsdtech/gmail-model.git#8f53eb8cbf9d2de02550bdad5238cf49c21c73e9",
+    "rewire": "2.5.2",
+    "sinon": "1.17.4"
   }
 }

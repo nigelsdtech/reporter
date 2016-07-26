@@ -7,7 +7,7 @@ var GmailModel = require('gmail-model')
 var
     _appName,
     _notificationTo,
-    _gmail;
+    _mailer;
 
 /*
  * Reporter constructor.
@@ -29,7 +29,7 @@ function Reporter(params) {
    * Set up an emailer
    */
 
-  var mailer = new GmailModel({
+  this._mailer = new GmailModel({
     appSpecificPassword : params.appSpecificPassword,
     clientSecretFile    : params.clientSecretFile,
     emailsFrom          : params.emailsFrom,
@@ -60,12 +60,12 @@ var method = Reporter.prototype;
  * @param {object=} params - Parameters for request
  * @param {string}  params.errMsg
  */
-function handleError (params) {
+method.handleError = function (params) {
 
   var emailContent = "Error running " + this._appName;
      emailContent += '<p>'+params.errMsg;
 
-  mailer.sendMessage({
+  this._mailer.sendMessage({
     body: emailContent,
     subject: this._appName + " ERROR",
     to: this._notificationTo
@@ -91,13 +91,13 @@ function handleError (params) {
  * @param {object=} params - Parameters for request
  * @param {string}  params.body - Email body
  */
-function sendCompletionNotice (params) {
+method.sendCompletionNotice = function (params) {
 
   var emailContent = this._appName + " complete.\n";
      emailContent += '<p>\n';
      emailContent += params.body;
 
-  mailer.sendMessage({
+  this._mailer.sendMessage({
     body: emailContent,
     subject: this._appName + " Report",
     to: this._notificationTo

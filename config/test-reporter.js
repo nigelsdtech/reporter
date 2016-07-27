@@ -3,6 +3,8 @@ var defer = require('config/defer').deferConfig;
 
 module.exports = {
 
+  appName: 'ReporterTester',
+
   mailbox: {
     personal: {
       emailAddress: process.env.PERSONAL_EMAIL_ADDRESS,

@@ -1,13 +1,15 @@
 "use strict"
 
-var GmailModel = require('gmail-model')
+//var GmailModel = require('gmail-model')
 
 
 // Some object variables
 var
     _appName,
     _notificationTo,
-    _mailer;
+    _mailer,
+    GmailModel
+;
 
 /*
  * Reporter constructor.
@@ -15,6 +17,7 @@ var
  * @param {string}   params.appName - name of the application invoking this reporter
  * @param {string}   params.appSpecificPassword - for gmail
  * @param {string}   params.clientSecretFile - full path to the client secret file to be used by google if an access token doesn't yet exist
+ * @param {object}   params.gmailModel - Optional. A GmailModel class (not an instance).
  * @param {string[]} params.googleScopes - Google drive scopes for which this object instance will have permissions
  * @param {string}   params.name - Name of the google inbox being used by the reporter
  * @param {string}   params.notificationTo - Name of the recipient
@@ -23,13 +26,15 @@ var
  * @param {string}   params.user - Gmail username (for sending emails)
  * @constructor
  */
-function Reporter(params) {
+function Configure(params) {
 
   /*
    * Set up an emailer
    */
 
-  this._mailer = new GmailModel({
+  if (params.gmailModel) {GmailModel = params.gmailModel} else {GmailModel = require('gmail-model')}
+
+  _mailer = new GmailModel({
     appSpecificPassword : params.appSpecificPassword,
     clientSecretFile    : params.clientSecretFile,
     emailsFrom          : params.emailsFrom,
@@ -41,13 +46,12 @@ function Reporter(params) {
   });
 
 
-  this._appName        = params.appName,
-  this._notificationTo = params.notificationTo
+  _appName        = params.appName,
+  _notificationTo = params.notificationTo
+
 }
 
 
-
-var method = Reporter.prototype;
 
 /**
  * HandleError
@@ -60,23 +64,15 @@ var method = Reporter.prototype;
  * @param {object=} params - Parameters for request
  * @param {string}  params.errMsg
  */
-method.handleError = function (params) {
+function HandleError (params) {
 
-  var emailContent = "Error running " + this._appName;
+  var emailContent = "Error running " + _appName;
      emailContent += '<p>'+params.errMsg;
 
-  this._mailer.sendMessage({
+  _sendMail({
     body: emailContent,
-    subject: this._appName + " ERROR",
-    to: this._notificationTo
-  }, function(err) {
-
-    if (err) {
-      var errMsg = 'Reporter: Error sending email: ' + err;
-      console.err(errMsg)
-    }
+    subject: _appName + " ERROR"
   });
-
 
 }
 
@@ -91,27 +87,52 @@ method.handleError = function (params) {
  * @param {object=} params - Parameters for request
  * @param {string}  params.body - Email body
  */
-method.sendCompletionNotice = function (params) {
+function SendCompletionNotice (params) {
 
-  var emailContent = this._appName + " complete.\n";
+  var emailContent = _appName + " complete.\n";
      emailContent += '<p>\n';
      emailContent += params.body;
 
-  this._mailer.sendMessage({
+  _sendMail({
     body: emailContent,
-    subject: this._appName + " Report",
-    to: this._notificationTo
-  }, function(err) {
-
-    if (err) {
-      var errMsg = 'Reporter SendCompletionNotice: Error sending email: ' + err;
-      console.err(errMsg)
-      throw err
-    }
+    subject: _appName + " Report"
   });
 
 
 }
 
+/**
+ * _sendMail
+ *
+ * @desc Actually send the email
+ *
+ * @alias _sendMail
+ *
+ * @param {object=} params - Parameters for request
+ * @param {string}  params.body - Email body
+ * @param {string}  params.subject - Email subject
+ */
+function _sendMail (params) {
+
+  _mailer.sendMessage({
+    body: params.body,
+    subject: params.subject,
+    to: _notificationTo
+  }, function(err) {
+
+    if (err) {
+      var errMsg = 'Reporter: Error sending email: ' + params.body;
+      console.error(errMsg)
+      throw new Error(err)
+    }
+  });
+
+}
+
+
 // export the class
-module.exports = Reporter;
+module.exports = {
+  handleError: HandleError,
+  configure: Configure,
+  sendCompletionNotice: SendCompletionNotice
+}

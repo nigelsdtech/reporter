@@ -1,7 +1,6 @@
 'use strict'
 
-var cfg        = require('config'),
-    chai       = require('chai'),
+var chai       = require('chai'),
     GmailModel = require('gmail-model'),
     sinon      = require('sinon'),
     reporter   = require('../../Reporter.js');
@@ -12,8 +11,8 @@ var cfg        = require('config'),
 chai.should();
 
 
-var timeout = cfg.test.timeout.unit || (1000*2);
-var appName = cfg.appName;
+var timeout = (1000*2);
+var appName = 'MyTestApp';
 
 
 
@@ -25,98 +24,98 @@ describe('The reporter', function () {
 
   this.timeout(timeout);
 
-  var consoleErrorStub,
-      sendMessageStub;
+  var sendMessageStub  = sinon.stub(GmailModel.prototype,'sendMessage');;
+  var consoleErrorStub = sinon.stub(console,'error');
 
-
-  before(function () {
-
-    sendMessageStub = sinon.stub(GmailModel.prototype,'sendMessage');
-    consoleErrorStub = sinon.stub(console,'error');
-
-    reporter.configure ({
-      appName: appName,
-      appSpecificPassword: '',
-      clientSecretFile: '',
-      gmailModel: GmailModel,
-      googleScopes: '',
-      name: '',
-      notificationTo: '',
-      tokenDir: '',
-      tokenFile: '',
-      user: ''
-    });
-
-
+  reporter.configure ({
+    appName: appName,
+    appSpecificPassword: '',
+    clientSecretFile: '',
+    gmailModel: GmailModel,
+    googleScopes: '',
+    name: '',
+    notificationTo: '',
+    tokenDir: '',
+    tokenFile: '',
+    user: ''
   });
 
 
-  describe('handleError', function () {
+  var sgm = 'Some generic message'
 
-    it('prepares the right error message', function () {
+  var tests = [{
+    fnName: 'handleError',
+    fn: reporter.handleError,
+    fnArgs: { errMsg: sgm },
+    expectedEmailSubject: appName + ' ERROR',
+    expectedEmailBody: 'Error running ' + appName + '<p>' + sgm }, {
 
-      var errMsg = 'Some generic message'
-      sendMessageStub.yields(null);
-
-      reporter.handleError({errMsg: errMsg })
-
-      var intendedBody = "Error running " + appName;
-          intendedBody += '<p>'+errMsg;
-
-      sendMessageStub.calledWith({
-        body: intendedBody,
-        subject: appName + " ERROR",
-        to: ''
-      }).should.be.true
-
-
-    });
-
-    it('logs and throws an error if the gmail api fails', function () {
-      sendMessageStub.yields('Err123');
-      try { reporter.handleError({errMsg: 'Email body'}) }
-      catch (e) {
-	consoleErrorStub.calledWith('Reporter: Error sending email: Error running ' + appName + '<p>Email body').should.be.true
-        sendMessageStub.threw().should.be.true
-      }
-    });
-
-  });
+    fnName: 'sendCompletionNotice',
+    fn: reporter.sendCompletionNotice,
+    fnArgs: { body: sgm },
+    expectedEmailSubject: appName + ' Report',
+    expectedEmailBody: appName + ' complete.\n<p>\n' + sgm }]
 
 
 
-  describe('sendCompletionNotice', function () {
+  /*
+   * Utility func to check sendMessageStub is called correctly
+   */
+  function isSmsCalled(b,s) {
+    sendMessageStub.calledWith({
+      body: b,
+      subject: s,
+      to: ''
+    }).should.be.true
+  }
 
-    it('prepares the right email', function () {
+  beforeEach (function () {
+    sendMessageStub.reset()
+    consoleErrorStub.reset()
+  })
 
-      var report = "Generic test complete"
-      sendMessageStub.yields(null);
 
-      reporter.sendCompletionNotice({body: report })
+  tests.forEach( function (test) {
 
-      var intendedBody = appName + " complete.\n";
-          intendedBody += '<p>\n';
-          intendedBody += report;
+    describe(test.fnName + ' without a callback passed in', function () {
 
-      sendMessageStub.calledWith({
-        body: intendedBody,
-        subject: appName + " Report",
-        to: ''
-      }).should.be.true
+      it('prepares and mails out the right message', function () {
+        sendMessageStub.yields(null);
+        test.fn(test.fnArgs)
+        isSmsCalled(test.expectedEmailBody, test.expectedEmailSubject)
+      });
+
+      it('runs the callback with an error if the gmail api fails', function () {
+        sendMessageStub.yields('Err123');
+        test.fn(test.fnArgs)
+        isSmsCalled(test.expectedEmailBody, test.expectedEmailSubject)
+        consoleErrorStub.calledWith('Reporter error: Err123').should.be.true
+      });
 
     });
 
 
-    it('logs and throws an error if the gmail api fails', function () {
-      sendMessageStub.yields('Err123');
-      try { reporter.sendCompletionNotice({body: 'Email body'}) }
-      catch (e) {
-	consoleErrorStub.calledWith('Reporter: Error sending email: Error running ' + appName + '<p>Email body').should.be.true
-        sendMessageStub.threw().should.be.true
-      }
-    });
+    describe(test.fnName + ' with a callback passed in', function () {
 
-  });
+      it('prepares and mails out the right message', function () {
+        sendMessageStub.yields(null);
+        test.fn(test.fnArgs, function (e) {
+          chai.expect(e).to.not.exist
+          isSmsCalled(test.expectedEmailBody, test.expectedEmailSubject)
+        })
+      });
+
+      it('runs the callback with an error if the gmail api fails', function () {
+        sendMessageStub.yields('Err123');
+        test.fn(test.fnArgs, function (e) {
+          e.should.equal('Err123')
+          isSmsCalled(test.expectedEmailBody, test.expectedEmailSubject)
+        })
+      });
+
+    });
+  })
+
 
   after(function () {
     sendMessageStub.restore();

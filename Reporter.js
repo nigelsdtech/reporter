@@ -51,7 +51,16 @@ function Configure(params) {
 
 }
 
-
+/**
+ * stubCb
+ *
+ * @desc A basic stub function that logs an error to console
+ *
+ * @param err
+ */
+function stubCb (err) {
+    console.error('Reporter error: ' + err)
+}
 
 /**
  * HandleError
@@ -61,10 +70,13 @@ function Configure(params) {
  *
  * @alias HandleError
  *
- * @param {object=} params - Parameters for request
- * @param {string}  params.errMsg
+ * @param {object=} params        - Parameters for request
+ * @param {string}  params.errMsg - Error message to be sent in the email
+ * @param {cb}      cb            - callback returns cb(err)
  */
-function HandleError (params) {
+function HandleError (params,cb) {
+
+  if (!cb) { cb = stubCb }
 
   var emailContent = "Error running " + _appName;
      emailContent += '<p>'+params.errMsg;
@@ -72,7 +84,7 @@ function HandleError (params) {
   _sendMail({
     body: emailContent,
     subject: _appName + " ERROR"
-  });
+  }, cb);
 
 }
 
@@ -84,10 +96,13 @@ function HandleError (params) {
  *
  * @alias SendCompletionNotice
  *
- * @param {object=} params - Parameters for request
+ * @param {object=} params      - Parameters for request
  * @param {string}  params.body - Email body
+ * @param {cb}      cb          - callback returns cb(err)
  */
-function SendCompletionNotice (params) {
+function SendCompletionNotice (params,cb) {
+
+  if (!cb) { cb = stubCb }
 
   var emailContent = _appName + " complete.\n";
      emailContent += '<p>\n';
@@ -96,7 +111,7 @@ function SendCompletionNotice (params) {
   _sendMail({
     body: emailContent,
     subject: _appName + " Report"
-  });
+  }, cb);
 
 
 }
@@ -108,24 +123,18 @@ function SendCompletionNotice (params) {
  *
  * @alias _sendMail
  *
- * @param {object=} params - Parameters for request
- * @param {string}  params.body - Email body
+ * @param {object=} params         - Parameters for request
+ * @param {string}  params.body    - Email body
  * @param {string}  params.subject - Email subject
+ * @param {cb}      cb             - callback returns cb(err)
  */
-function _sendMail (params) {
+function _sendMail (params, cb) {
 
   _mailer.sendMessage({
     body: params.body,
     subject: params.subject,
     to: _notificationTo
-  }, function(err) {
-
-    if (err) {
-      var errMsg = 'Reporter: Error sending email: ' + params.body;
-      console.error(errMsg)
-      throw new Error(err)
-    }
-  });
+  }, cb)
 
 }
 
